@@ -1,11 +1,14 @@
 streamlit
+chromadb==0.4.24
+sentence-transformers
 langchain
 langchain-community
-langchain-core
+langchain-text-splitters
 langgraph
-chromadb
-sentence-transformers
-pypdf
-langchain-groq
 python-dotenv
-ddgs
+pypdf
+
+# 🔥 CRITICAL FIXES
+protobuf==3.20.3
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
