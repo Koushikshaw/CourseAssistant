@@ -12,3 +12,9 @@ pypdf
 protobuf==3.20.3
 opentelemetry-api==1.22.0
 opentelemetry-sdk==1.22.0
+
+# 🔥 THIS FIXES YOUR CURRENT ERROR
+numpy==1.26.4
+
+# optional safety
+grpcio==1.60.0
