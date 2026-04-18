@@ -344,15 +344,15 @@ Faithfulness score:"""
         return {"messages": msgs}
 
     return {
-        "memory": memory_node,
-        "router": router_node,
-        "intent_classifier": intent_node,
-        "retrieval": retrieval_node,
-        "skip_retrieval": skip_retrieval_node,
-        "tool": tool_node,
-        "answer": answer_node,
-        "eval": eval_node,
-        "update_memory": update_memory_node,
+        "memory_node": memory_node,
+        "router_node": router_node,
+        "intent_classifier_node": intent_node,
+        "retrieval_node": retrieval_node,
+        "skip_retrieval_node": skip_retrieval_node,
+        "tool_node": tool_node,
+        "answer_node": answer_node,
+        "eval_node": eval_node,
+        "update_memory_node": update_memory_node,
     }
 
 
@@ -369,68 +369,68 @@ def build_agent(llm, embedder, collection):
     builder = StateGraph(CapstoneState)
 
     # Add nodes
-    builder.add_node("memory",            nodes["memory"])
-    builder.add_node("router",            nodes["router"])
-    builder.add_node("intent_classifier", nodes["intent_classifier"])
-    builder.add_node("retrieval",         nodes["retrieval"])
-    builder.add_node("skip_retrieval", nodes["skip_retrieval"])
-    builder.add_node("tool",           nodes["tool"])
-    builder.add_node("answer",         nodes["answer"])
-    builder.add_node("eval",           nodes["eval"])
-    builder.add_node("update_memory",  nodes["update_memory"])
+    builder.add_node("memory_node",            nodes["memory_node"])
+    builder.add_node("router_node",            nodes["router_node"])
+    builder.add_node("intent_classifier_node", nodes["intent_classifier_node"])
+    builder.add_node("retrieval_node",         nodes["retrieval_node"])
+    builder.add_node("skip_retrieval_node", nodes["skip_retrieval_node"])
+    builder.add_node("tool_node",           nodes["tool_node"])
+    builder.add_node("answer_node",         nodes["answer_node"])
+    builder.add_node("eval_node",           nodes["eval_node"])
+    builder.add_node("update_memory_node",  nodes["update_memory_node"])
 
     # Entry point
-    builder.set_entry_point("memory")
-    builder.add_edge("memory", "router")
+    builder.set_entry_point("memory_node")
+    builder.add_edge("memory_node", "router_node")
 
     # Routing logic
     def route_decision(state: CapstoneState) -> str:
         r = state.get("route", "retrieve")
         if r == "tool":
-            return "intent_classifier"
+            return "intent_classifier_node"
         elif r == "memory_only":
-            return "skip_retrieval"
+            return "skip_retrieval_node"
         else:
-            return "retrieval"
+            return "retrieval_node"
 
     builder.add_conditional_edges(
-        "router",
+        "router_node",
         route_decision,
         {
-            "intent_classifier": "intent_classifier",
-            "retrieval":         "retrieval",
-            "skip_retrieval":    "skip_retrieval",
+            "intent_classifier_node": "intent_classifier_node",
+            "retrieval_node":         "retrieval_node",
+            "skip_retrieval_node":    "skip_retrieval_node",
         },
     )
 
     # After intent_classifier → tool → answer
-    builder.add_edge("intent_classifier", "tool")
-    builder.add_edge("tool",           "answer")
+    builder.add_edge("intent_classifier_node", "tool_node")
+    builder.add_edge("tool_node",           "answer_node")
 
     # After retrieval → answer
-    builder.add_edge("retrieval",      "answer")
-    builder.add_edge("skip_retrieval", "answer")
+    builder.add_edge("retrieval_node",      "answer_node")
+    builder.add_edge("skip_retrieval_node", "answer_node")
 
     # Eval → retry or finish
-    builder.add_edge("answer", "eval")
+    builder.add_edge("answer_node", "eval_node")
 
     def eval_decision(state: CapstoneState) -> str:
         faith = state.get("faithfulness", 1.0)
         retries = state.get("eval_retries", 0)
         if faith < 0.6 and retries < 2:
-            return "retrieval"          # re-retrieve and re-answer
-        return "update_memory"
+            return "retrieval_node"          # re-retrieve and re-answer
+        return "update_memory_node"
 
     builder.add_conditional_edges(
-        "eval",
+        "eval_node",
         eval_decision,
         {
-            "retrieval":     "retrieval",
-            "update_memory": "update_memory",
+            "retrieval_node":     "retrieval_node",
+            "update_memory_node": "update_memory_node",
         },
     )
 
-    builder.add_edge("update_memory", END)
+    builder.add_edge("update_memory_node", END)
 
     return builder.compile(checkpointer=memory)
 
