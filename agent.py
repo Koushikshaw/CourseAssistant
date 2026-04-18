@@ -154,9 +154,10 @@ You are a routing assistant for a Course Assistant chatbot for Agentic AI (B.Tec
 Decide the best action for answering the user's question.
 
 Available options:
-- retrieve   → for concepts from syllabus (RAG, LangGraph, embeddings, memory, tools, etc.)
+- retrieve    → for concepts from syllabus (RAG, LangGraph, embeddings, memory, tools, etc.)
 - memory_only → if question refers to previous conversation (e.g., "what did you just say?")
-- tool       → if special capability is needed
+- tool        → if special capability is needed
+- chat        → if message is conversational (greetings, thanks, "ok", "good", "nice", acknowledgements)
 
 Use tool when:
 - question asks for code explanation     → use code tool
@@ -167,7 +168,7 @@ Use tool when:
 Recent conversation: {recent}
 Current question: {question}
 
-Reply with ONLY ONE WORD: retrieve OR memory_only OR tool
+Reply with ONLY ONE WORD: retrieve OR memory_only OR tool OR chat
 """
         response = llm.invoke(prompt)
         decision = response.content.strip().lower()
@@ -176,6 +177,8 @@ Reply with ONLY ONE WORD: retrieve OR memory_only OR tool
             decision = "memory_only"
         elif "tool" in decision:
             decision = "tool"
+        elif "chat" in decision:
+            decision = "chat"
         else:
             decision = "retrieve"
 
@@ -288,6 +291,11 @@ Reply with only one word: code OR compare OR plan OR search
                 "Stay strictly grounded in the provided context.]"
             )
 
+        route = state.get("route", "retrieve")
+        chat_note = ""
+        if route == "chat":
+            chat_note = "\n- If the message is conversational (greeting, thanks, acknowledgement), reply briefly and naturally in 1 sentence. Do NOT repeat previous answers."
+
         system_prompt = f"""You are an expert Agentic AI teaching assistant for B.Tech 4th year students.
 
 Your role:
@@ -296,7 +304,7 @@ Your role:
 - Otherwise answer ONLY from the provided knowledge base context
 - Be concise and structured — avoid unnecessarily long answers
 - Use bullet points or numbered lists only when genuinely helpful
-- For comparisons, keep to 3-5 key differences maximum{retry_note}
+- For comparisons, keep to 3-5 key differences maximum{chat_note}{retry_note}
 """
         user_prompt = f"""Conversation so far:
 {history_text}
@@ -389,7 +397,7 @@ def build_agent(llm, embedder, collection):
         r = state.get("route", "retrieve")
         if r == "tool":
             return "intent_classifier_node"
-        elif r == "memory_only":
+        elif r == "memory_only" or r == "chat":
             return "skip_retrieval_node"
         else:
             return "retrieval_node"
