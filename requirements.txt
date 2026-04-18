@@ -1,14 +1,11 @@
 streamlit
 chromadb==0.4.24
 sentence-transformers
-langchain
-langchain-community
-langchain-text-splitters
-langgraph
+langchain==0.2.17
+langchain-community==0.2.17
+langchain-text-splitters==0.2.4
+langgraph==0.2.28
 python-dotenv
 pypdf
-
-numpy==1.26.4
-protobuf==3.20.3
-
-# rebuild trigger
+numpy
+protobuf>=4.21.0
