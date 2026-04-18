@@ -103,13 +103,13 @@ for msg in st.session_state.messages:
         st.write(msg["content"])
         if msg["role"] == "assistant" and msg.get("meta"):
             meta = msg["meta"]
-            cols = st.columns(3)
-            if meta.get("faithfulness"):
-                cols[0].metric("Faithfulness", f"{meta['faithfulness']:.2f}")
+            parts = []
             if meta.get("route"):
-                cols[1].metric("Route", meta["route"])
+                parts.append(f"via {meta['route']}")
             if meta.get("sources"):
-                cols[2].metric("Sources", ", ".join(set(meta["sources"]))[:30])
+                parts.append(", ".join(set(meta["sources"])))
+            if parts:
+                st.caption(" · ".join(parts))
 
 # ─────────────────────────────────────────────────────────
 # CHAT INPUT
@@ -132,26 +132,21 @@ if user_input:
 
         st.write(answer)
 
-        # Show metadata below answer
-        faith = result.get("faithfulness", 0.0)
         route = result.get("route", "")
         sources = result.get("sources", [])
-
-        if faith or route or sources:
-            cols = st.columns(3)
-            if faith:
-                cols[0].metric("Faithfulness", f"{faith:.2f}")
-            if route:
-                cols[1].metric("Route", route)
-            if sources:
-                cols[2].metric("Sources", ", ".join(set(sources))[:30])
+        parts = []
+        if route:
+            parts.append(f"via {route}")
+        if sources:
+            parts.append(", ".join(set(sources)))
+        if parts:
+            st.caption(" · ".join(parts))
 
     # Save to history
     st.session_state.messages.append({
         "role": "assistant",
         "content": answer,
         "meta": {
-            "faithfulness": faith,
             "route": route,
             "sources": sources,
         },
