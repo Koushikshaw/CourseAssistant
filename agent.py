@@ -345,7 +345,7 @@ Faithfulness score:"""
     return {
         "memory": memory_node,
         "router": router_node,
-        "intent": intent_node,
+        "intent_classifier": intent_node,
         "retrieval": retrieval_node,
         "skip_retrieval": skip_retrieval_node,
         "tool": tool_node,
@@ -368,10 +368,10 @@ def build_agent(llm, embedder, collection):
     builder = StateGraph(CapstoneState)
 
     # Add nodes
-    builder.add_node("memory",         nodes["memory"])
-    builder.add_node("router",         nodes["router"])
-    builder.add_node("intent",         nodes["intent"])
-    builder.add_node("retrieval",      nodes["retrieval"])
+    builder.add_node("memory",            nodes["memory"])
+    builder.add_node("router",            nodes["router"])
+    builder.add_node("intent_classifier", nodes["intent_classifier"])
+    builder.add_node("retrieval",         nodes["retrieval"])
     builder.add_node("skip_retrieval", nodes["skip_retrieval"])
     builder.add_node("tool",           nodes["tool"])
     builder.add_node("answer",         nodes["answer"])
@@ -386,7 +386,7 @@ def build_agent(llm, embedder, collection):
     def route_decision(state: CapstoneState) -> str:
         r = state.get("route", "retrieve")
         if r == "tool":
-            return "intent"
+            return "intent_classifier"
         elif r == "memory_only":
             return "skip_retrieval"
         else:
@@ -396,14 +396,14 @@ def build_agent(llm, embedder, collection):
         "router",
         route_decision,
         {
-            "intent":         "intent",
-            "retrieval":      "retrieval",
-            "skip_retrieval": "skip_retrieval",
+            "intent_classifier": "intent_classifier",
+            "retrieval":         "retrieval",
+            "skip_retrieval":    "skip_retrieval",
         },
     )
 
-    # After intent → tool → answer
-    builder.add_edge("intent",         "tool")
+    # After intent_classifier → tool → answer
+    builder.add_edge("intent_classifier", "tool")
     builder.add_edge("tool",           "answer")
 
     # After retrieval → answer
