@@ -137,7 +137,19 @@ def make_nodes(llm, embedder, collection):
         msgs = msgs + [{"role": "user", "content": state["question"]}]
         if len(msgs) > 6:
             msgs = msgs[-6:]
-        return {"messages": msgs}
+        # Clear stale fields from previous run so they don't bleed into this turn
+        return {
+            "messages": msgs,
+            "answer": "",
+            "retrieved": "",
+            "sources": [],
+            "tool_name": "",
+            "tool_result": "",
+            "route": "",
+            "intent": "",
+            "faithfulness": 0.0,
+            "eval_retries": 0,
+        }
 
     # ── Node 2: Router ────────────────────────────────────
     def router_node(state: CapstoneState) -> dict:
