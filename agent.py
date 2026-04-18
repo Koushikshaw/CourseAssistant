@@ -14,8 +14,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sentence_transformers import SentenceTransformer
 import chromadb
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
 load_dotenv()
 
@@ -76,14 +76,17 @@ def load_llm_and_kb():
     stores in a fresh in-memory ChromaDB collection.
     """
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
-    embedder = SentenceTransformer("all-MiniLM-L6-v2")
+    embedder = DefaultEmbeddingFunction()
 
     client = chromadb.Client()
     try:
         client.delete_collection("capstone_kb")
     except Exception:
         pass
-    collection = client.create_collection("capstone_kb")
+    collection = client.create_collection(
+        "capstone_kb",
+        embedding_function=embedder,
+    )
 
     all_docs = []
     if os.path.isdir(PDF_FOLDER):
@@ -111,7 +114,6 @@ def load_llm_and_kb():
 
     collection.add(
         documents=texts,
-        embeddings=embedder.encode(texts).tolist(),
         ids=[f"id_{i}" for i in range(len(texts))],
         metadatas=metas,
     )
@@ -201,8 +203,7 @@ Reply with only one word: code OR compare OR plan OR search
 
     # ── Node 3b: Retrieval ────────────────────────────────
     def retrieval_node(state: CapstoneState) -> dict:
-        q_emb = embedder.encode([state["question"]]).tolist()
-        results = collection.query(query_embeddings=q_emb, n_results=3)
+        results = collection.query(query_texts=[state["question"]], n_results=3)
         chunks = results["documents"][0]
         topics = [m.get("topic", "unknown") for m in results["metadatas"][0]]
         context = "\n\n---\n\n".join(
